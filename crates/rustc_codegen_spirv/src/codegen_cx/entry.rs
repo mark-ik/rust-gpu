@@ -677,17 +677,14 @@ impl<'tcx> CodegenCx<'tcx> {
                     // Load both elements of the scalar pair from the input variable.
                     assert_eq!(storage_class, Ok(StorageClass::Input));
                     let layout = entry_arg_abi.layout;
-                    let (a, b) = match layout.backend_repr {
-                        rustc_abi::BackendRepr::ScalarPair(a, b) => (a, b),
-                        other => span_bug!(
+                    let rustc_abi::BackendRepr::ScalarPair { b_offset, .. } = layout.backend_repr
+                    else {
+                        span_bug!(
                             hir_param.ty_span,
-                            "ScalarPair expected for entry param, found {other:?}"
-                        ),
+                            "ScalarPair expected for entry param, found {:?}",
+                            layout.backend_repr
+                        )
                     };
-                    let b_offset = a
-                        .primitive()
-                        .size(self)
-                        .align_to(b.primitive().align(self).abi);
 
                     let elem0_ty = self.scalar_pair_element_backend_type(layout, 0, false);
                     let elem1_ty = self.scalar_pair_element_backend_type(layout, 1, false);
