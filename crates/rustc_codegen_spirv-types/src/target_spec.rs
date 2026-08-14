@@ -72,6 +72,19 @@ impl TargetSpecVersion {
     /// Returns the version of the target spec required for a certain rustc version. May return `None` if the version
     /// is old enough to not need target specs.
     pub fn from_rustc_version(rustc_version: Version) -> Self {
+        // Compare on the version triple alone. semver sorts a
+        // pre-release *before* its release, so the pinned nightly
+        // (`1.97.0-nightly`) tested as older than 1.97.0 and selected a
+        // spec containing `allows-weak-linkage`, the very key that
+        // rustc removes. rust-gpu therefore failed against the
+        // toolchain its own `rust-toolchain.toml` pins. Every gate here
+        // means "this rustc release line or later", which is what
+        // stripping the pre-release expresses.
+        let rustc_version = Version::new(
+            rustc_version.major,
+            rustc_version.minor,
+            rustc_version.patch,
+        );
         if rustc_version >= Version::new(1, 97, 0) {
             Rustc_1_97_0
         } else if rustc_version >= Version::new(1, 94, 0) {
